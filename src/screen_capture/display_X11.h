@@ -16,10 +16,13 @@ namespace rdv {
 
 class DisplayHandle {
  public:
-  DisplayHandle() : display_(nullptr) {}
-  ~DisplayHandle() {}
+  DisplayHandle() : display_(XOpenDisplay(NULL)) {}
+  explicit DisplayHandle(Display* display) : display_(display) {}
+  ~DisplayHandle() {
+    XFree(display_);
+  }
 
-  Display* Get() const { return display_; }
+  Display* get() const { return display_; }
 
  private:
   Display* display_;
@@ -28,32 +31,27 @@ class DisplayHandle {
 class Screen {
  public:
   Screen();
-  Screen(DisplayHandle* display_handle, uint32_t id, Size size, Point point);
+  Screen(DisplayHandle* display_handle, uint32_t id, Rect rect);
   ~Screen();
-
-  void SetDisplayHanel(DisplayHandle* display_handle) const { return display_handle_ = display_handle; }
-  void SetId(uint32_t id) { id_ = id;}
-  void SetSize(Size size) { size_ = size; }
-  void SetPoint(Point point) { point_ = point; }
 
   DisplayHandle* GetDisplayHanel() const { return display_handle_; }
   uint32_t GetId() const { return id_; }
-  Size GetSize() const { return size_; }
-  Point GetPoint() const { return point_; }
+  Rect GetRect() const { return rect_; }
+  Size GetSize() const { return rect_.size(); }
+  Point GetPoint() const { return rect_.point(); }
 
  private:
   DisplayHandle* display_handle_;
   uint32_t id_;
-  Size size_;
-  Point point_;
+  Rect rect_;
 };
 
 class X11Display {
  public:
-  X11Display() {}
-  ~X11Display() {}
+  using ScreenMap = std::map<uint32_t, Screen>;
 
-  using ScreenMap = std::map<uint8_t, Screen>;
+  X11Display();
+  ~X11Display();
 
   bool UpdateScreen();
   const ScreenMap& GetScreenMap() const { return screen_map_; }

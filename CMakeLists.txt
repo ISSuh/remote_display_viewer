@@ -12,7 +12,7 @@ ADD_COMPILE_OPTIONS (-g -Wall)
 # Set Third party Library
 #-------------------------------------------------------------------------------
 find_package(X11 REQUIRED)
-find_package(xinerama REQUIRED)
+# find_package(xinerama REQUIRED)
 
 find_package (PkgConfig REQUIRED)
 pkg_check_modules (GTK2 REQUIRED gtk+-2.0)
@@ -27,9 +27,39 @@ SET(TARGET_NAME "remote-display-view")
 #-------------------------------------------------------------------------------
 SET(SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/src)
 
+SET(BASE_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
+SET(NET_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
+SET(SCREEN_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
+
+SET(BASE_INCLUDE_FILES
+
+)
+
+SET(BASE_SOURCE_FILES
+
+)
+
+SET(NET_INCLUDE_FILES
+  ${BASE_CAPTURE_DIR}/geometry.h
+)
+
+SET(NET_SOURCE_FILES
+
+)
+
+SET(SCREEN_CAPTURE_INCLUDE_FILES
+  ${SCREEN_CAPTURE_DIR}/display_X11.h
+  ${SCREEN_CAPTURE_DIR}/debug_window_X11.h
+)
+
+SET(SCREEN_CAPTURE_SOURCE_FILES
+  ${SCREEN_CAPTURE_DIR}/display_X11.cc
+)
+
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
   ${X11_INCLUDE_DIR}
+  ${X11_Xinerama_INCLUDE_DIR}
   ${GTK2_INCLUDE_DIRS}
 )
 
@@ -38,14 +68,27 @@ link_directories (
 )
 
 #-------------------------------------------------------------------------------
-# Set SubDirectory
+# Build
 #-------------------------------------------------------------------------------
+# add_library(rdv_base STATIC ${BASE_SOURCE_FILES})
+
+# add_library(rdv_net STATIC ${NET_SOURCE_FILES})
+
+add_library(rdv_screencapture STATIC ${SCREEN_CAPTURE_SOURCE_FILES})
+target_link_libraries(rdv_screencapture
+ PRIVATE
+  ${X11_LIBRARIES}
+  ${X11_Xinerama_LIB}
+  ${GTK2_LIBRARIES}
+)
+
 add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view.cc)
 
 target_link_libraries(${TARGET_NAME}
-PRIVATE
-  ${X11_LIBRARIES}
-  ${GTK2_LIBRARIES}
+ PRIVATE
+  # rdv_base
+  # rdv_net
+  rdv_screencapture
 )
 
 # # -------------------------------------------------------------------------------

@@ -31,7 +31,7 @@ class Size {
   }
 
   std::string ToString() {
-    return std::to_string(width_) + "x" + std::to_string(height);
+    return std::to_string(width_) + "x" + std::to_string(height_);
   }
 
  private:
@@ -49,11 +49,11 @@ class Point {
   int32_t x() const { return x_; }
   int32_t y() const { return y_; }
 
-  void SetWidth(int32_t x) { x_ = x < 0 ? 0 : x; }
+  void Setx(int32_t x) { x_ = x < 0 ? 0 : x; }
   void Sety(int32_t y) { y_ = y < 0 ? 0 : y; }
 
-  void SetPosition(int32_t x, int32_t y) {
-    SetWidth(x);
+  void SetPoint(int32_t x, int32_t y) {
+    Setx(x);
     Sety(y);
   }
 
@@ -68,10 +68,34 @@ class Point {
 
 class Rect {
  public:
+  Rect() : size_(Size(0, 0)), pos_(Point(0, 0)) {}
+  Rect(Size size, Point pos) : size_(size), pos_(pos) {}
+  Rect(int32_t witdh, int32_t height, int32_t x, int32_t y)
+    : size_(Size(witdh, height)), pos_(Point(x, y)) {}
+  ~Rect() {}
+
+  Size size() const { return size_; }
+  Point point() const { return pos_; }
+
+  int32_t width() const { return size_.width(); }
+  int32_t height() const { return size_.height(); }
+  int32_t x() const { return pos_.x(); }
+  int32_t y() const { return pos_.y(); }
+
+  void SetSize(Size size) { size_ = size; }
+  void SetSize(int32_t width, int32_t height) { size_.SetSize(width, height) ; }
+
+  void SettPoint(Point pos) { pos_ = pos; }
+  void SettPoint(int32_t x, int32_t y) { pos_.SetPoint(x, y); }
+
+  std::string ToString() {
+    return size_.ToString() + "/" + pos_.ToString();
+  }
+
  private:
-  Position pos_;
   Size size_;
-}
+  Point pos_;
+};
 
 }  // namespace rdv
 
