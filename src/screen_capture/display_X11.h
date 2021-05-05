@@ -7,8 +7,8 @@
 #ifndef SRC_SCREEN_CAPTURE_DISPLAY_X11_H_
 #define SRC_SCREEN_CAPTURE_DISPLAY_X11_H_
 
-#include <map>
 #include <X11/Xlib.h>
+#include <map>
 
 #include "base/geometry.h"
 
@@ -18,9 +18,7 @@ class DisplayHandle {
  public:
   DisplayHandle() : display_(XOpenDisplay(NULL)) {}
   explicit DisplayHandle(Display* display) : display_(display) {}
-  ~DisplayHandle() {
-    XFree(display_);
-  }
+  ~DisplayHandle() { XCloseDisplay(display_); }
 
   Display* get() const { return display_; }
 
@@ -53,10 +51,12 @@ class X11Display {
   X11Display();
   ~X11Display();
 
-  bool UpdateScreen();
-  const ScreenMap& GetScreenMap() const { return screen_map_; }
+  DisplayHandle* GetDisplayHandle() { return &display_handle_; }
+  const ScreenMap& GetScreenMap();
 
  private:
+  bool UpdateScreen();
+
   DisplayHandle display_handle_;
   ScreenMap screen_map_;
 };

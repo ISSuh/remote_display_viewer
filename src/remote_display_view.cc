@@ -6,19 +6,21 @@
 
 #include <iostream>
 
-// #include "base/debug_window.h"
-#include "screen_capture/display_X11.h"
+#include "screen_capture/screen_capture_X11.h"
 
 int main(int argc, char *argv[]) {
   std::cout << "Remote Display View\n";
-  rdv::X11Display display;
 
-  display.UpdateScreen();
-  auto infoes = display.GetScreenMap();
+  rdv::ScreenCaptureX11 screen_capture;
+  auto* display = screen_capture.GetDisplay();
+  auto infoes = display->GetScreenMap();
 
   for (const auto& info : infoes) {
     std::cout << info.first << " : "
               << info.second.GetRect().ToString()
               << std::endl;
   }
+
+  screen_capture.Initialize();
+  screen_capture.Run();
 }

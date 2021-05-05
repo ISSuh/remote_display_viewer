@@ -13,7 +13,7 @@ DebugWindow::DebugWindow()
 
 DebugWindow::~DebugWindow() {}
 
-void DebugWindow::CreateWindow(DisplayHandle* display_handle, int width, int height) {
+void DebugWindow::CreateWindow(DisplayHandle* display_handle, Size size) {
   uint64_t mask = CWBackingStore;
   XSetWindowAttributes attributes;
 
@@ -24,13 +24,17 @@ void DebugWindow::CreateWindow(DisplayHandle* display_handle, int width, int hei
   auto& window = window_.get();
 
   window = XCreateWindow(dsp, DefaultRootWindow(dsp),
-                                0, 0, width, height, 0,
+                                0, 0, size.width(), size.height(), 0,
                                 DefaultDepth(dsp, XDefaultScreen(dsp)),
                                 InputOutput, CopyFromParent, mask, &attributes);
 
   XStoreName(dsp, window, "DbugWindowX11");
   XSelectInput(dsp, window, StructureNotifyMask);
   XMapWindow(dsp, window);
+}
+
+void DebugWindow::DestroyWindow(DisplayHandle* display_handle) {
+  XDestroyWindow(display_handle->get(), window_.get());
 }
 
 }  // namespace rdv

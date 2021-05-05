@@ -29,8 +29,9 @@ class DebugWindow {
   DebugWindow();
   ~DebugWindow();
 
-  void CreateWindow(DisplayHandle* display_handle, int width, int height);
-  WindowHandle GetWindow() const { return window_; }
+  void CreateWindow(DisplayHandle* display_handle, Size size);
+  void DestroyWindow(DisplayHandle* display_handle);
+  WindowHandle GetWindowHandle() const { return window_; }
 
  private:
   WindowHandle window_;
