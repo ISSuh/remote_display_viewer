@@ -59,11 +59,6 @@ bool X11Display::UpdateScreen() {
   XineramaScreenInfo* info =
       XineramaQueryScreens(display_handle_.get(), &count);
 
-  // int32_t all_screen_width = XDisplayWidth(dsp, screen);
-  // int32_t all_screen_height = 0;
-  // int32_t all_screen_x = 0;
-  // int32_t all_screen_y = 0;
-
   if (count) {
     for (int id = 0; id < count; ++id) {
       Rect rect(info[id].width, info[id].height, info[id].x_org,

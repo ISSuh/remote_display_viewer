@@ -30,12 +30,14 @@ class ScreemImageX11 {
   void DestroyImage(DisplayHandle* display_hanle);
 
   XImage* GetImage() { return ximage_; }
+  Size GetSize() const { return size_; }
 
  private:
   bool CreateShm(Size size);
 
   XImage* ximage_;
   XShmSegmentInfo shm_info_;
+  Size size_;
 };
 
 class ScreenCaptureX11 {
@@ -48,7 +50,7 @@ class ScreenCaptureX11 {
 
   X11Display* GetDisplay() { return &display_; }
 
-  void Initialize();
+  bool SetScreen(int32_t screen_id);
 
   void Run();
   void changeRunningState(bool state) { running_.store(state); }
@@ -58,11 +60,9 @@ class ScreenCaptureX11 {
   void Capture() { Capture(Point(0, 0)); }
   void Capture(Point pos);
 
-  bool ProcessImage(ScreemImageX11* src, ScreemImageX11* dst);
-  uint8_t getpixel(ScreemImageX11* image, int i, int j, int w, int h);
-
   ScreemImageX11 image_;
   X11Display display_;
+  Screen* screen_;
 
   std::atomic<bool> running_;
   std::atomic<uint32_t> fps_;
@@ -71,7 +71,6 @@ class ScreenCaptureX11 {
   DebugWindow window_;
   Size window_size_;
 #endif
-
 };
 
 }  // namespace rdv

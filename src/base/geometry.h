@@ -30,6 +30,8 @@ class Size {
     SetHeight(height);
   }
 
+  bool IsEmpty() { return (width_ == 0 || height_ == 0); }
+
   std::string ToString() {
     return std::to_string(width_) + "x" + std::to_string(height_);
   }
@@ -87,6 +89,8 @@ class Rect {
 
   void SettPoint(Point pos) { pos_ = pos; }
   void SettPoint(int32_t x, int32_t y) { pos_.SetPoint(x, y); }
+
+  bool IsEmpty() { return size_.IsEmpty(); }
 
   std::string ToString() {
     return size_.ToString() + "/" + pos_.ToString();

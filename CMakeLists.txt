@@ -35,6 +35,7 @@ SET(SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/src)
 SET(BASE_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
 SET(NET_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
 SET(SCREEN_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
+SET(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/src/third_party)
 
 SET(BASE_INCLUDE_FILES
   ${BASE_CAPTURE_DIR}/geometry.h
@@ -53,6 +54,12 @@ SET(NET_SOURCE_FILES
 
 )
 
+SET(THIRD_PARTY_INCLUDE_FILES
+)
+
+SET(THIRD_PARTY_SOURCE_FILES
+)
+
 SET(SCREEN_CAPTURE_INCLUDE_FILES
   ${SCREEN_CAPTURE_DIR}/display_X11.h
   ${SCREEN_CAPTURE_DIR}/debug_window_X11.h
@@ -68,6 +75,7 @@ SET(SCREEN_CAPTURE_SOURCE_FILES
 SET(RDV_BASE ${BASE_INCLUDE_FILES} ${BASE_SOURCE_FILES})
 SET(RDV_NET ${NET_INCLUDE_FILES} ${NET_SOURCE_FILES})
 SET(RDV_SCREEN_CAPTURE ${SCREEN_CAPTURE_INCLUDE_FILES} ${SCREEN_CAPTURE_SOURCE_FILES})
+SET(RDV_THIRD_PARTY ${THIRD_PARTY_INCLUDE_FILES} ${THIRD_PARTY_SOURCE_FILES})
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
@@ -94,12 +102,15 @@ target_link_libraries(rdv_screencapture
   ${GTK2_LIBRARIES}
 )
 
+# add_library(rdv_thirdparty STATIC ${THIRD_PARTY_SOURCE_FILES})
+
 add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view.cc)
 target_link_libraries(${TARGET_NAME}
  PRIVATE
   # rdv_base
   # rdv_net
   rdv_screencapture
+  rdv_thirdparty
 )
 
 # # -------------------------------------------------------------------------------

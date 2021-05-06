@@ -21,6 +21,6 @@ int main(int argc, char *argv[]) {
               << std::endl;
   }
 
-  screen_capture.Initialize();
-  screen_capture.Run();
+  // screen_capture.SetScreen(1);
+  // screen_capture.Run();
 }
