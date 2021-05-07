@@ -4,11 +4,11 @@
  *
  */
 
-#ifndef SRC_NET_SERVER_H_
-#define SRC_NET_SERVER_H_
+#ifndef SRC_NET_SESSION_H_
+#define SRC_NET_SESSION_H_
 
 namespace rdv {
 
 }  // namespace rdv
 
-#endif  // SRC_NET_SERVER_H_
+#endif  // SRC_NET_SESSION_H_
