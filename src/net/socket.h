@@ -9,79 +9,73 @@
 
 #include <sys/socket.h>
 #include <sys/unistd.h>
-#include <sys/epoll.h>
-#include <arpa/inet.h>
 
 #include <string>
+#include <utility>
 
 namespace rdv {
 
-class SocketAddr {
+using SocketAddrIn = sockaddr_in;
+using SocketAddr = sockaddr;
+using SocketLen = socklen_t;
+
+class SocketOption {
  public:
-  SocketAddr() {}
-  ~SocketAddr() {}
+  bool non_blocking = true;
+  bool is_server = true;
+  bool is_client = false;
+  int32_t reuse_addr = true;
+  int32_t listen_back_log = 15;
+};
+
+class SocketInfo {
+ public:
+  SocketInfo() : sock_len_(sizeof(sock_addr_in_)) {}
+  ~SocketInfo() {}
+
+  SocketAddrIn* GetSocketAddrIn() { return &sock_addr_in_; }
+  SocketLen* GetSocketLen() { return &sock_len_; }
 
  private:
-  sockaddr_in sock_addr_;
+  SocketAddrIn sock_addr_in_;
+  SocketLen sock_len_;
 };
 
 class Socket {
  public:
-  Socket() : sock_fd_(0) {}
-  explicit Socket(int sock) : sock_fd_(sock) {}
-  virtual ~Socket() {
-    close(sock_fd_);
-  }
+  virtual ~Socket();
 
-  int* GetSocket() { return &sock_fd_; }
+  static Socket* Create(int32_t socket_fd = 0);
+
+  int32_t GetSocket() { return sock_fd_; }
+  bool SetOption(SocketOption option);
 
  private:
-  bool SetNonBlocking() {}
-  bool SetSocketOption() {}
-  bool Bind() {}
-  bool Listen() {}
+  explicit Socket(int32_t sock);
 
-  int sock_fd_;
+  bool SetNonBlocking();
+  bool SetSocketOption(int32_t options);
+
+  int32_t sock_fd_;
 };
 
-class Epoll {
+class ServerSocket {
  public:
-  const int DEFAULT_EVENTS_SIZE = 1000;
+  explicit ServerSocket(SocketOption option);
+  ~ServerSocket();
 
-  Epoll() : epoll_fd_(0) {}
-  ~Epoll() {
-    close(epoll_fd_);
-  }
+  bool Initial(uint32_t port);
+  int32_t GetSocket() { return socket_->GetSocket();}
 
-  bool Initialize() {
-    epoll_fd_ = epoll_create(DEFAULT_EVENTS_SIZE);
-    if (epoll_fd_ < 0) {
-      close(epoll_fd_);
-      return false;
-    }
-    return true;
-  }
-
-  int* GetHandle() { return &epoll_fd_; }
-  bool AddEpoll(Socket sock) {
-    struct epoll_event event;
-
-    event.events = EPOLLIN;
-    event.data.fd = *sock.GetSocket();
-
-    if (epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, *sock.GetSocket(), &event) < 0) {
-      return false;
-    }
-
-    return true;
-  }
+  Socket* Accept(SocketInfo* info);
 
  private:
-  int epoll_fd_;
-  struct epoll_event evnets_;
-}
+  bool Bind(uint32_t port);
+  bool Listen(uint32_t listen_back_log);
 
-
+  Socket* socket_;
+  SocketInfo socket_info_;
+};
 
 }  // namespace rdv
 

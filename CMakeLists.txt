@@ -32,14 +32,14 @@ add_definitions(-DDEBUG_X11_WINDOW)
 #-------------------------------------------------------------------------------
 SET(SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/src)
 
-SET(BASE_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
-SET(NET_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
+SET(BASE_DIR ${PROJECT_SOURCE_DIR}/src/base)
+SET(NET_DIR ${PROJECT_SOURCE_DIR}/src/net)
 SET(SCREEN_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
 SET(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/src/third_party)
 
 SET(BASE_INCLUDE_FILES
-  ${BASE_CAPTURE_DIR}/geometry.h
-  ${BASE_CAPTURE_DIR}/time.h
+  ${BASE_DIR}/geometry.h
+  ${BASE_DIR}/time.h
 )
 
 SET(BASE_SOURCE_FILES
@@ -47,11 +47,11 @@ SET(BASE_SOURCE_FILES
 )
 
 SET(NET_INCLUDE_FILES
-
+  ${NET_DIR}/socket.h
 )
 
 SET(NET_SOURCE_FILES
-
+  ${NET_DIR}/socket.cc
 )
 
 SET(THIRD_PARTY_INCLUDE_FILES
@@ -92,7 +92,7 @@ link_directories (
 # Build
 #-------------------------------------------------------------------------------
 # add_library(rdv_base STATIC ${RDV_BASE})
-# add_library(rdv_net STATIC ${NET_SOURCE_FILES})
+add_library(rdv_net STATIC ${NET_SOURCE_FILES})
 
 add_library(rdv_screencapture STATIC ${RDV_SCREEN_CAPTURE})
 target_link_libraries(rdv_screencapture
@@ -108,9 +108,9 @@ add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view.cc)
 target_link_libraries(${TARGET_NAME}
  PRIVATE
   # rdv_base
-  # rdv_net
+  rdv_net
   rdv_screencapture
-  rdv_thirdparty
+  # rdv_thirdparty
 )
 
 # # -------------------------------------------------------------------------------
