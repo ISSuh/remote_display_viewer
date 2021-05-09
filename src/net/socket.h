@@ -9,6 +9,7 @@
 
 #include <sys/socket.h>
 #include <sys/unistd.h>
+#include <arpa/inet.h>
 
 #include <string>
 #include <utility>
@@ -65,7 +66,9 @@ class ServerSocket {
   ~ServerSocket();
 
   bool Initial(uint32_t port);
-  int32_t GetSocket() { return socket_->GetSocket();}
+
+  Socket* GetSocket() { return socket_;}
+  int32_t GetSocketFd() { return socket_->GetSocket();}
 
   Socket* Accept(SocketInfo* info);
 

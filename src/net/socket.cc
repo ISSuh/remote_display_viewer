@@ -4,7 +4,6 @@
  *
  */
 
-#include <arpa/inet.h>
 #include <fcntl.h>
 
 #include "net/socket.h"
@@ -33,13 +32,13 @@ Socket::~Socket() {
 
 bool Socket::SetOption(SocketOption option) {
   if (option.non_blocking) {
-    if (SetNonBlocking()) {
+    if (!SetNonBlocking()) {
       return false;
     }
   }
 
   if (option.is_server) {
-    if (SetSocketOption(option.reuse_addr)) {
+    if (!SetSocketOption(option.reuse_addr)) {
       return false;
     }
   }
@@ -72,15 +71,15 @@ bool ServerSocket::Initial(uint32_t port) {
   }
 
   SocketOption option;
-  if (socket_->SetOption(option)) {
+  if (!socket_->SetOption(option)) {
     return false;
   }
 
-  if (Bind(port)) {
+  if (!Bind(port)) {
     return false;
   }
 
-  if (Listen(option.listen_back_log)) {
+  if (!Listen(option.listen_back_log)) {
     return false;
   }
 
@@ -94,8 +93,7 @@ bool ServerSocket::Bind(uint32_t port) {
   sock_addr_in->sin_port = htons(port);
   sock_addr_in->sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if (bind(socket_->GetSocket(),
-           reinterpret_cast<SocketAddr*>(sock_addr_in),
+  if (bind(socket_->GetSocket(), reinterpret_cast<SocketAddr*>(sock_addr_in),
            sizeof(*sock_addr_in)) < 0) {
     return false;
   }
@@ -111,9 +109,10 @@ bool ServerSocket::Listen(uint32_t listen_back_log) {
 }
 
 Socket* ServerSocket::Accept(SocketInfo* info) {
-  int32_t client_socket_fd = accept(socket_->GetSocket(),
-                                reinterpret_cast<SocketAddr*>(info->GetSocketAddrIn()),
-                                info->GetSocketLen());
+  int32_t client_socket_fd =
+      accept(socket_->GetSocket(),
+             reinterpret_cast<SocketAddr*>(info->GetSocketAddrIn()),
+             info->GetSocketLen());
   if (client_socket_fd < 0) {
     return nullptr;
   }

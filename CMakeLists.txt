@@ -48,10 +48,16 @@ SET(BASE_SOURCE_FILES
 
 SET(NET_INCLUDE_FILES
   ${NET_DIR}/socket.h
+  ${NET_DIR}/epoll.h
+  ${NET_DIR}/session.h
+  ${NET_DIR}/server.h
 )
 
 SET(NET_SOURCE_FILES
   ${NET_DIR}/socket.cc
+  ${NET_DIR}/epoll.cc
+  ${NET_DIR}/session.cc
+  ${NET_DIR}/server.cc
 )
 
 SET(THIRD_PARTY_INCLUDE_FILES
@@ -92,7 +98,7 @@ link_directories (
 # Build
 #-------------------------------------------------------------------------------
 # add_library(rdv_base STATIC ${RDV_BASE})
-add_library(rdv_net STATIC ${NET_SOURCE_FILES})
+add_library(rdv_net STATIC ${RDV_NET})
 
 add_library(rdv_screencapture STATIC ${RDV_SCREEN_CAPTURE})
 target_link_libraries(rdv_screencapture
@@ -102,7 +108,7 @@ target_link_libraries(rdv_screencapture
   ${GTK2_LIBRARIES}
 )
 
-# add_library(rdv_thirdparty STATIC ${THIRD_PARTY_SOURCE_FILES})
+# add_library(rdv_thirdparty STATIC ${RDV_THIRD_PARTY})
 
 add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view.cc)
 target_link_libraries(${TARGET_NAME}
