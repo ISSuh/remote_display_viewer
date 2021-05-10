@@ -8,28 +8,29 @@
 #define SRC_NET_SESSION_H_
 
 #include <iostream>
+#include <string>
 #include <atomic>
 
 #include "net/socket.h"
 
 namespace rdv {
 
+enum class SessionState : uint8_t {
+  OK,
+  CONNECT,
+  DISCONNECT,
+  READ_ERROR,
+  SEND_ERROR,
+  LAST = SEND_ERROR
+};
+
 class Session {
  public:
-  static Session* Create(Socket* sock);
-  ~Session();
+  static const uint32_t DEFAULT_READ_SIZE = 4096;
 
-  void Send();
-  void Read();
-  void Close();
-
-  bool IsConnect() const { return connect_.load(); }
-
- private:
-  explicit Session(Socket* sock);
-
-  Socket* sock_;
-  std::atomic<bool> connect_;
+  static SessionState Send(Socket* socket, const std::string& message);
+  static SessionState Read(Socket* socket);
+  static void Close(Socket* socket);
 };
 
 }  // namespace rdv

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "net/server.h"
+#include "net/http/request.h"
 
 namespace rdv {
 
@@ -18,6 +19,8 @@ Server::Server(ServerOption option)
 Server::~Server() {}
 
 bool Server::Initial() {
+  std::cout << "Server::Initial\n";
+
   if (!epoll_.Create(socket_.GetSocket())) {
     return false;
   }
@@ -30,6 +33,8 @@ bool Server::Initial() {
 }
 
 void Server::Run() {
+  std::cout << "Server::Run\n";
+
   running_.store(true);
 
   while (running_.load()) {
@@ -39,25 +44,19 @@ void Server::Run() {
     }
 
     for (const auto& event : events) {
-      int32_t fd = event.data.fd;
-      std::cout << session_map_.size() << std::endl;
-      if (fd == socket_.GetSocketFd()) {
+      int32_t socket_fd = event.data.fd;
+      if (IsListenEvent(socket_fd)) {
         CreateNewSession();
       } else {
-        Session* session = session_map_[fd];
-        if (session->IsConnect()) {
-          session->Read();
-        } else {
-          session->Close();
-          delete session;
-          session_map_.erase(fd);
-        }
+        HandleRequest(socket_fd);
       }
     }
   }
 }
 
 bool Server::CreateNewSession() {
+  std::cout << "Server::CreateNewSession\n";
+
   Socket* client_socket = nullptr;
   SocketInfo client_socket_info;
   SocketOption client_socket_option;
@@ -78,14 +77,34 @@ bool Server::CreateNewSession() {
     return false;
   }
 
-  if (session_map_.find(client_socket->GetSocket()) != session_map_.end()) {
+  if (client_socket_map_.find(client_socket->GetSocket()) !=
+      client_socket_map_.end()) {
     delete client_socket;
     return false;
   }
 
-  session_map_.insert(
-      {client_socket->GetSocket(), Session::Create(client_socket)});
+  client_socket_map_.insert(
+      {client_socket->GetSocket(), client_socket});
   return true;
+}
+
+void Server::HandleRequest(int32_t socket_fd) {
+  switch (Session::Read(client_socket_map_[socket_fd])) {
+    case SessionState::DISCONNECT:
+      std::cout << socket_fd << "- SessionState::DISCONNECT\n";
+      epoll_.Close(client_socket_map_[socket_fd]);
+      Session::Close(client_socket_map_[socket_fd]);
+      client_socket_map_.erase(socket_fd);
+      break;
+    case SessionState::READ_ERROR:
+      std::cout << socket_fd << "- SessionState::READ_ERROR\n";
+      epoll_.Close(client_socket_map_[socket_fd]);
+      Session::Close(client_socket_map_[socket_fd]);
+      client_socket_map_.erase(socket_fd);
+      break;
+    default:
+      break;
+  }
 }
 
 }  // namespace rdv

@@ -23,6 +23,7 @@ class Epoll {
   ~Epoll();
 
   bool Create(Socket* sock);
+  void Close(Socket* sock);
   std::vector<Event> Wait();
 
   int32_t GetHandle() const { return epoll_fd_; }

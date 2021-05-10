@@ -4,32 +4,38 @@
  *
  */
 
+#include <thread>
+#include <chrono>
+
 #include "net/session.h"
 
 namespace rdv {
 
-Session* Session::Create(Socket* sock) {
-  return new Session(sock);
+SessionState Session::Send(Socket* socket, const std::string& message) {
+  std::cout << "Session::Send - " << socket->GetSocket() << std::endl;
+  write(socket->GetSocket(), message.c_str(), message.length());
+  return SessionState::OK;
 }
 
-Session::Session(Socket* sock) : sock_(sock), connect_(true) {}
+SessionState Session::Read(Socket* socket) {
+  std::cout << "Session::Read - " << socket->GetSocket() << std::endl;
 
-Session::~Session() {}
+  char data[DEFAULT_READ_SIZE];
+  int32_t len = read(socket->GetSocket(), &data, sizeof(data));
 
-void Session::Send() {}
-
-void Session::Read() {
-  char data[4096];
-  int32_t len = read(sock_->GetSocket(), &data, sizeof(data));
-  if (!len) {
-    std::cout << data << std::endl;
-  } else {
-    connect_.store(false);
+  if (len == 0) {
+    return SessionState::DISCONNECT;
+  } else if (len < 0) {
+    return SessionState::READ_ERROR;
   }
+
+  std::cout << socket->GetSocket() << " - \n" << data << std::endl;
+  return SessionState::OK;
 }
 
-void Session::Close() {
-
+void Session::Close(Socket* socket) {
+  close(socket->GetSocket());
+  delete socket;
 }
 
 }  // namespace rdv

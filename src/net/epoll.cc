@@ -8,6 +8,8 @@
 
 #include "net/epoll.h"
 
+#include <iostream>
+
 namespace rdv {
 
 Epoll::Epoll()
@@ -21,6 +23,8 @@ Epoll::~Epoll() {
 }
 
 bool Epoll::Create(Socket* sock) {
+  std::cout << "Epoll::Create\n";
+
   if (!epoll_fd_) {
     epoll_fd_ = epoll_create(DEFAULT_EVENTS_SIZE);
     if (epoll_fd_ < 0) {
@@ -32,6 +36,8 @@ bool Epoll::Create(Socket* sock) {
 }
 
 std::vector<Epoll::Event> Epoll::Wait() {
+  std::cout << "Epoll::Wait\n";
+
   int32_t count =
       epoll_wait(epoll_fd_, &events_[0], DEFAULT_EVENTS_SIZE, timeout_);
 
@@ -42,6 +48,8 @@ std::vector<Epoll::Event> Epoll::Wait() {
 }
 
 bool Epoll::SetEpollEvnet(Socket* sock) {
+  std::cout << "Epoll::SetEpollEvnet\n";
+
   Event event;
   event.events = EPOLLIN;
   event.data.fd = sock->GetSocket();
@@ -50,6 +58,11 @@ bool Epoll::SetEpollEvnet(Socket* sock) {
     return false;
   }
   return true;
+}
+
+void Epoll::Close(Socket* sock) {
+  std::cout << "Epoll::Close\n";
+  epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, sock->GetSocket(), nullptr);
 }
 
 }  // namespace rdv

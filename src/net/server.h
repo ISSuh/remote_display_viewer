@@ -7,12 +7,12 @@
 #ifndef SRC_NET_SERVER_H_
 #define SRC_NET_SERVER_H_
 
-#include <map>
 #include <atomic>
+#include <map>
 
-#include "net/socket.h"
 #include "net/epoll.h"
 #include "net/session.h"
+#include "net/socket.h"
 
 namespace rdv {
 
@@ -30,14 +30,18 @@ class Server {
   void Run();
 
  private:
+  bool IsListenEvent(int32_t socket_fd) {
+    return socket_.GetSocketFd() == socket_fd;
+  }
   bool CreateNewSession();
+  void HandleRequest(int32_t socket_fd);
 
   ServerSocket socket_;
   Epoll epoll_;
   ServerOption option_;
 
-  using SessionMap = std::map<int32_t, Session*>;
-  SessionMap session_map_;
+  using SocketMap = std::map<int32_t, Socket*>;
+  SocketMap client_socket_map_;
 
   std::atomic<bool> running_;
 };
