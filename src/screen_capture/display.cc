@@ -13,13 +13,12 @@
 #include "screen_capture/display.h"
 
 namespace rdv {
+ScreenInfo::ScreenInfo() : display_handle_(nullptr), id_(-1), rect_(Rect()) {}
 
-Screen::Screen() : display_handle_(nullptr), id_(0), rect_(Rect()) {}
-
-Screen::Screen(DisplayHandle* display_handle, uint32_t id, Rect rect)
+ScreenInfo::ScreenInfo(DisplayHandle* display_handle, uint32_t id, Rect rect)
     : display_handle_(display_handle), id_(id), rect_(rect) {}
 
-Screen::~Screen() {
+ScreenInfo::~ScreenInfo() {
   display_handle_ = nullptr;
 }
 
@@ -63,7 +62,7 @@ bool X11Display::UpdateScreen() {
     for (int id = 0; id < count; ++id) {
       Rect rect(info[id].width, info[id].height, info[id].x_org,
                 info[id].y_org);
-      screen_map_.insert({id, Screen(&display_handle_, id, rect)});
+      screen_map_.insert({id, ScreenInfo(&display_handle_, id, rect)});
     }
   } else {
     std::cout << "ERROR : XineramaQueryScreens says there aren't any\n";

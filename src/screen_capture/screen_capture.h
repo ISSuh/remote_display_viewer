@@ -20,25 +20,29 @@ namespace rdv {
 
 class ScreemImage {
  public:
-  const uint8_t PLANE = 4;
-
   ScreemImage();
   ~ScreemImage();
 
-  bool CreateImage(DisplayHandle* display_hanle, Size size);
+  bool CreateImage(DisplayHandle* display_hanle, Rect rect);
   void DestroyImage(DisplayHandle* display_hanle);
 
-  XImage* GetImage() { return ximage_; }
-  int32_t GetImageSize() {
-    return ximage_->width * ximage_->width;
+  XImage* GetXImage() { return ximage_; }
+
+  char* GetImageBuffer() { return ximage_->data; }
+  int32_t GetImageBufferSize() const {
+    return rect_.width() * rect_.height() * image_plane;
   }
 
+  const Rect& GetRect() const { return rect_; }
+  int32_t GetImagePlane() const { return image_plane; }
+
  private:
-  bool CreateShm(Size size);
+  bool CreateShm(Rect rect);
 
   XImage* ximage_;
   XShmSegmentInfo shm_info_;
-  Size size_;
+  Rect rect_;
+  const uint8_t image_plane = 4;
 };
 
 class ScreenCapture {
@@ -47,15 +51,14 @@ class ScreenCapture {
   ~ScreenCapture();
 
   X11Display::ScreenMap GetScreenMap() { return display_.GetScreenMap(); }
+  ScreenInfo GetScreenInfomationes(int32_t screen_id);
+
+  const ScreemImage* GetScreemImage() const { return &image_; }
+
   bool SetScreen(int32_t screen_id);
-  int32_t GetScreenWidth(int32_t screen_id);
-  int32_t GetScreenHeight(int32_t screen_id);
+  void Capture(char* image_data);
 
-  void Capture() { Capture(Point(0, 0)); }
-  void Capture(Point pos);
-
-  // void Run();
-
+ private:
   ScreemImage image_;
   X11Display display_;
 };
