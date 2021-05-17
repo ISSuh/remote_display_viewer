@@ -1,4 +1,4 @@
-/**
+ /**
  * 
  *  Copyright:  Copyright (c) 2020, ISSuh
  * 
@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-#include "screen_capture/screen_capture_X11.h"
+#include "screen_capture/screen_capture_bridge.h"
 #include "net/server.h"
 
 int main(int argc, char *argv[]) {
@@ -23,13 +23,5 @@ int main(int argc, char *argv[]) {
   // }
 
   // screen_capture.SetScreen(1);
-  // screen_capture.Run();`
-
-  rdv::ServerOption option;
-  rdv::Server server(option);
-  if (!server.Initial()) {
-    exit(0);
-  }
-
-  server.Run();
+  // screen_capture.Run();
 }

@@ -10,7 +10,7 @@
 
 #include <X11/extensions/Xinerama.h>
 
-#include "screen_capture/display_X11.h"
+#include "screen_capture/display.h"
 
 namespace rdv {
 
@@ -27,9 +27,9 @@ X11Display::X11Display() {}
 
 X11Display::~X11Display() {}
 
-const X11Display::ScreenMap& X11Display::GetScreenMap() {
+X11Display::ScreenMap X11Display::GetScreenMap() {
   if (!UpdateScreen()) {
-    return std::move(X11Display::ScreenMap());
+    return X11Display::ScreenMap();
   }
 
   return screen_map_;

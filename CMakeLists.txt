@@ -31,57 +31,28 @@ add_definitions(-DDEBUG_X11_WINDOW)
 # Set Build Variable
 #-------------------------------------------------------------------------------
 SET(SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/src)
-
-SET(BASE_DIR ${PROJECT_SOURCE_DIR}/src/base)
-SET(NET_DIR ${PROJECT_SOURCE_DIR}/src/net)
 SET(SCREEN_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
-SET(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/src/third_party)
 
 SET(BASE_INCLUDE_FILES
   ${BASE_DIR}/geometry.h
   ${BASE_DIR}/time.h
 )
 
-SET(BASE_SOURCE_FILES
-
-)
-
-SET(NET_INCLUDE_FILES
-  ${NET_DIR}/socket.h
-  ${NET_DIR}/epoll.h
-  ${NET_DIR}/session.h
-  ${NET_DIR}/server.h
-)
-
-SET(NET_SOURCE_FILES
-  ${NET_DIR}/socket.cc
-  ${NET_DIR}/epoll.cc
-  ${NET_DIR}/session.cc
-  ${NET_DIR}/server.cc
-)
-
-SET(THIRD_PARTY_INCLUDE_FILES
-)
-
-SET(THIRD_PARTY_SOURCE_FILES
-)
-
 SET(SCREEN_CAPTURE_INCLUDE_FILES
-  ${SCREEN_CAPTURE_DIR}/display_X11.h
-  ${SCREEN_CAPTURE_DIR}/debug_window_X11.h
-  ${SCREEN_CAPTURE_DIR}/screen_capture_X11.h
+  ${SCREEN_CAPTURE_DIR}/display.h
+  # ${SCREEN_CAPTURE_DIR}/debug_window_X11.h
+  ${SCREEN_CAPTURE_DIR}/screen_capture.h
+  ${SCREEN_CAPTURE_DIR}/screen_capture_bridge.h
 )
 
 SET(SCREEN_CAPTURE_SOURCE_FILES
-  ${SCREEN_CAPTURE_DIR}/display_X11.cc
-  ${SCREEN_CAPTURE_DIR}/debug_window_X11.cc
-  ${SCREEN_CAPTURE_DIR}/screen_capture_X11.cc
+  ${SCREEN_CAPTURE_DIR}/display.cc
+  # ${SCREEN_CAPTURE_DIR}/debug_window_X11.cc
+  ${SCREEN_CAPTURE_DIR}/screen_capture.cc
+  ${SCREEN_CAPTURE_DIR}/screen_capture_bridge.cc
 )
 
-SET(RDV_BASE ${BASE_INCLUDE_FILES} ${BASE_SOURCE_FILES})
-SET(RDV_NET ${NET_INCLUDE_FILES} ${NET_SOURCE_FILES})
 SET(RDV_SCREEN_CAPTURE ${SCREEN_CAPTURE_INCLUDE_FILES} ${SCREEN_CAPTURE_SOURCE_FILES})
-SET(RDV_THIRD_PARTY ${THIRD_PARTY_INCLUDE_FILES} ${THIRD_PARTY_SOURCE_FILES})
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
@@ -97,9 +68,6 @@ link_directories (
 #-------------------------------------------------------------------------------
 # Build
 #-------------------------------------------------------------------------------
-# add_library(rdv_base STATIC ${RDV_BASE})
-add_library(rdv_net STATIC ${RDV_NET})
-
 add_library(rdv_screencapture STATIC ${RDV_SCREEN_CAPTURE})
 target_link_libraries(rdv_screencapture
  PRIVATE
@@ -108,15 +76,10 @@ target_link_libraries(rdv_screencapture
   ${GTK2_LIBRARIES}
 )
 
-# add_library(rdv_thirdparty STATIC ${RDV_THIRD_PARTY})
-
 add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view.cc)
 target_link_libraries(${TARGET_NAME}
  PRIVATE
-  # rdv_base
-  rdv_net
   rdv_screencapture
-  # rdv_thirdparty
 )
 
 # # -------------------------------------------------------------------------------
