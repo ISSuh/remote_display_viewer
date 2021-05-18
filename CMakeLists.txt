@@ -6,7 +6,7 @@ PROJECT (RemoteDisplayView)
 #-------------------------------------------------------------------------------
 SET(CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
-ADD_COMPILE_OPTIONS (-g -Wall)
+ADD_COMPILE_OPTIONS (-g -O3 -Wall -Wextra -fPIC)
 
 #-------------------------------------------------------------------------------
 # Set Third party Library
@@ -20,39 +20,32 @@ pkg_check_modules (GTK2 REQUIRED gtk+-2.0)
 #-------------------------------------------------------------------------------
 # Set Configure
 #-------------------------------------------------------------------------------
-SET(TARGET_NAME "remote-display-view")
-
-#-------------------------------------------------------------------------------
-# Set Define
-#-------------------------------------------------------------------------------
-add_definitions(-DDEBUG_X11_WINDOW)
+SET(TARGET_NAME "remote-display-view-test")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/pkg)
 
 #-------------------------------------------------------------------------------
 # Set Build Variable
 #-------------------------------------------------------------------------------
-SET(SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/src)
-SET(SCREEN_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/src/screen_capture)
-
-SET(BASE_INCLUDE_FILES
-  ${BASE_DIR}/geometry.h
-  ${BASE_DIR}/time.h
-)
+# SET(SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR}/src)
+SET(SCREEN_CAPTURE_DIR ${PROJECT_SOURCE_DIR}/screen_capture)
 
 SET(SCREEN_CAPTURE_INCLUDE_FILES
+  ${SCREEN_CAPTURE_DIR}/geometry.h
   ${SCREEN_CAPTURE_DIR}/display.h
-  # ${SCREEN_CAPTURE_DIR}/debug_window_X11.h
   ${SCREEN_CAPTURE_DIR}/screen_capture.h
   ${SCREEN_CAPTURE_DIR}/screen_capture_bridge.h
 )
 
 SET(SCREEN_CAPTURE_SOURCE_FILES
   ${SCREEN_CAPTURE_DIR}/display.cc
-  # ${SCREEN_CAPTURE_DIR}/debug_window_X11.cc
   ${SCREEN_CAPTURE_DIR}/screen_capture.cc
   ${SCREEN_CAPTURE_DIR}/screen_capture_bridge.cc
 )
 
-SET(RDV_SCREEN_CAPTURE ${SCREEN_CAPTURE_INCLUDE_FILES} ${SCREEN_CAPTURE_SOURCE_FILES})
+SET(RDV_SCREEN_CAPTURE
+  ${SCREEN_CAPTURE_INCLUDE_FILES}
+  ${SCREEN_CAPTURE_SOURCE_FILES}
+)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
@@ -68,7 +61,7 @@ link_directories (
 #-------------------------------------------------------------------------------
 # Build
 #-------------------------------------------------------------------------------
-add_library(rdv_screencapture STATIC ${RDV_SCREEN_CAPTURE})
+add_library(rdv_screencapture SHARED ${RDV_SCREEN_CAPTURE})
 target_link_libraries(rdv_screencapture
  PRIVATE
   ${X11_LIBRARIES}
@@ -76,11 +69,11 @@ target_link_libraries(rdv_screencapture
   ${GTK2_LIBRARIES}
 )
 
-add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view.cc)
-target_link_libraries(${TARGET_NAME}
- PRIVATE
-  rdv_screencapture
-)
+# add_executable(${TARGET_NAME} ${SOURCE_DIRECTORY}/remote_display_view_test.cc)
+# target_link_libraries(${TARGET_NAME}
+#  PRIVATE
+#   rdv_screencapture
+# )
 
 # # -------------------------------------------------------------------------------
 # # Set gTest
