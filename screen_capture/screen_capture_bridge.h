@@ -18,26 +18,26 @@ typedef struct {
   int height;
   int x;
   int y;
-} RemoteScreen;
+} ScreenInfo;
 
 typedef struct {
   char* buffer;
   int width;
   int height;
   int plane;
-} RemoteScreenImage;
+} ScreenImage;
 
 
 void* create_rdv_hadle();
 void destroy_rdv_hadle(void* handle);
 
 int screen_count(void* handle);
-void screen_infomations(void* handle, RemoteScreen* remote_screen);
+void screen_infomations(void* handle, ScreenInfo* remote_screen);
 
-void create_screen_image(void* handle, int screen_id, RemoteScreenImage* image);
-void destroy_screen_image(RemoteScreenImage* image);
+void create_screen_image(void* handle, int screen_id, ScreenImage* image);
+void destroy_screen_image(ScreenImage* image);
 
-void capture(void* handle, RemoteScreenImage* image);
+void capture(void* handle, ScreenImage* image);
 
 #ifdef __cplusplus
 }  // extern "C"

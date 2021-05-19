@@ -10,7 +10,7 @@
 #include <X11/Xlib.h>
 #include <map>
 
-#include "base/geometry.h"
+#include "geometry.h"
 
 namespace rdv {
 

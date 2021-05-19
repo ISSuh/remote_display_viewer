@@ -4,8 +4,8 @@
  *
  */
 
-#include "screen_capture/screen_capture_bridge.h"
-#include "screen_capture/screen_capture.h"
+#include "screen_capture_bridge.h"
+#include "screen_capture.h"
 
 void* create_rdv_hadle() {
   return new rdv::ScreenCapture();
@@ -15,7 +15,7 @@ void destroy_rdv_hadle(void* handle) {
   if (!handle) {
     return;
   }
-  delete handle;
+  delete static_cast<rdv::ScreenCapture*>(handle);
 }
 
 int screen_count(void* handle) {
@@ -28,7 +28,7 @@ int screen_count(void* handle) {
   return screen_map.size();
 }
 
-void screen_infomations(void* handle, RemoteScreen* remote_screen) {
+void screen_infomations(void* handle, ScreenInfo* remote_screen) {
   if (!handle || !remote_screen) {
     return;
   }
@@ -51,7 +51,7 @@ void screen_infomations(void* handle, RemoteScreen* remote_screen) {
 }
 
 
-void create_screen_image(void* handle, int screen_id, RemoteScreenImage* image) {
+void create_screen_image(void* handle, int screen_id, ScreenImage* image) {
   if (!handle || !image) {
     return;
   }
@@ -66,14 +66,14 @@ void create_screen_image(void* handle, int screen_id, RemoteScreenImage* image) 
   image->buffer = new char[screen_image->GetImageBufferSize()];
 }
 
-void destroy_screen_image(RemoteScreenImage* image) {
+void destroy_screen_image(ScreenImage* image) {
   if (!image) {
     return;
   }
   delete image->buffer;
 }
 
-void capture(void* handle, RemoteScreenImage* image) {
+void capture(void* handle, ScreenImage* image) {
   if (!handle || !image) {
     return;
   }

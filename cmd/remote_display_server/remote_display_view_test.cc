@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-#include "screen_capture/screen_capture_bridge.h"
+#include "screen_capture_bridge.h"
 
 int main(int argc, char *argv[]) {
   std::cout << "Remote Display View\n";

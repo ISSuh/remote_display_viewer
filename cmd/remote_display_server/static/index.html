@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Remote Display Viewer</title>
+    <script>
+      async function getScreenLists(url) {
+        const response = await fetch(url);
+        const json = await response.json();
+        return json;
+      }
+
+      async function updateScreenList() {
+        var address = document.getElementById("serverAddress").value;
+        var url = address + "/api/screens";
+          
+        const screen_lists_json = await getScreenLists(url);
+
+        var screen_count = screen_lists_json.length;
+        for (i = 0 ; i < screen_count ; i++) {
+          const a = document.createElement("a")
+          const li = document.createElement("li");
+
+          var text = screen_lists_json[i].Id + " : " +
+                    screen_lists_json[i].Pos.Width + "x" +
+                    screen_lists_json[i].Pos.Height + " / " +
+                    screen_lists_json[i].Pos.X + "," +
+                    screen_lists_json[i].Pos.Y;
+
+          const textNode = document.createTextNode(text);
+          li.appendChild(textNode);
+          
+          a.appendChild(li);
+          a.href = url + "/" + screen_lists_json[i].Id;
+
+          document.getElementById('screen-list').appendChild(a);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h2>Display List</h2>
+    <div>
+      <input type='text' id='serverAddress' />
+      <input type='button' value='set' onclick='updateScreenList()' />
+    </div>
+    <div>
+      <ul id="screen-list">
+      </ul>
+    </div>
+  </body>
+</html>

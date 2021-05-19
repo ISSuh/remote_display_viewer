@@ -13,8 +13,8 @@
 #include <atomic>
 #include <chrono>
 
-#include "base/geometry.h"
-#include "screen_capture/display.h"
+#include "geometry.h"
+#include "display.h"
 
 namespace rdv {
 
@@ -37,7 +37,7 @@ class ScreemImage {
   int32_t GetImagePlane() const { return image_plane; }
 
  private:
-  bool CreateShm(Rect rect);
+  bool CreateShm();
 
   XImage* ximage_;
   XShmSegmentInfo shm_info_;

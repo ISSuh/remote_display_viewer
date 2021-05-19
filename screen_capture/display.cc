@@ -10,7 +10,7 @@
 
 #include <X11/extensions/Xinerama.h>
 
-#include "screen_capture/display.h"
+#include "display.h"
 
 namespace rdv {
 ScreenInfo::ScreenInfo() : display_handle_(nullptr), id_(-1), rect_(Rect()) {}

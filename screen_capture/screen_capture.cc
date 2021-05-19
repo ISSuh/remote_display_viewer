@@ -4,7 +4,7 @@
  *
  */
 
-#include "screen_capture/screen_capture.h"
+#include "screen_capture.h"
 #include <X11/Xutil.h>
 #include <sys/shm.h>
 #include <cmath>
@@ -28,7 +28,7 @@ bool ScreemImage::CreateImage(DisplayHandle* display_hanle, Rect rect) {
   }
 
   rect_ = rect;
-  if (!CreateShm(rect_)) {
+  if (!CreateShm()) {
     return false;
   }
 
@@ -70,7 +70,7 @@ ScreenCapture::~ScreenCapture() {
   image_.DestroyImage(display_.GetDisplayHandle());
 }
 
-bool ScreemImage::CreateShm(Rect rect) {
+bool ScreemImage::CreateShm() {
   shm_info_.readOnly = false;
   shm_info_.shmid = shmget(IPC_PRIVATE, GetImageBufferSize(),
                            IPC_CREAT | 0600);
