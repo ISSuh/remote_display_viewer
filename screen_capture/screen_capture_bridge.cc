@@ -27,7 +27,7 @@ int screen_count(void* handle) {
   return screen_capture->NumberOfScreen();
 }
 
-void screen_infomations(void* handle, ScreenInfo* remote_screen) {
+void screen_infomations(void* handle, Screen* remote_screen) {
   if (!handle || !remote_screen) {
     return;
   }

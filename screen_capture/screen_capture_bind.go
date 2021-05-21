@@ -4,11 +4,9 @@ package screencapture
 // #cgo pkg-config: gtk+-3.0
 // #include <screen_capture_bridge.h>
 import "C"
-import (
-	"unsafe"
-)
+import "unsafe"
 
-type ScreenInfo struct {
+type Screen struct {
 	Id     int
 	Width  int
 	Height int
@@ -17,40 +15,41 @@ type ScreenInfo struct {
 }
 
 type ScreenImage struct {
-	buffer []byte
-	width  int
-	height int
-	plane  int
+	Buffer []byte
+	Width  int
+	Height int
+	Plane  int
 }
 
 type ScreenCapture struct {
-	handle     unsafe.Pointer
-	screenInfo ScreenInfo
-	cpature    ScreenImage
+	Handle      unsafe.Pointer
+	Screen      C.Screen
+	ScreenImage C.ScreenImage
 }
 
 func CreateScreenCaptureHandle() ScreenCapture {
-	var screen_capture ScreenCapture
-	screen_capture.handle = C.create_rdv_hadle()
-	return screen_capture
+	var screenCapture ScreenCapture
+	screenCapture.Handle = C.create_rdv_hadle()
+	return screenCapture
 }
 
-func DestroyScreenCaptureHandle(screen_capture *ScreenCapture) {
-	C.destroy_rdv_hadle(screen_capture.handle)
+func DestroyScreenCaptureHandle(screenCapture *ScreenCapture) {
+	C.destroy_rdv_hadle(screenCapture.Handle)
 }
 
-func ScreenCount(screen_capture *ScreenCapture) int {
-	return int(C.screen_count(screen_capture.handle))
+func ScreenCount(screenCapture *ScreenCapture) int {
+	return int(C.screen_count(screenCapture.Handle))
 }
 
-func ScreenInfomations(screenCapture *ScreenCapture) []ScreenInfo {
+func ScreenInfomations(screenCapture *ScreenCapture) []Screen {
 	count := ScreenCount(screenCapture)
-	infomations := make([]ScreenInfo, count, count)
-	screenInfo := make([]C.ScreenInfo, count, count)
 
-	C.screen_infomations(screenCapture.handle, &screenInfo[0])
+	infomations := make([]Screen, count, count)
+	screen := make([]C.Screen, count, count)
 
-	for i, info := range screenInfo {
+	C.screen_infomations(screenCapture.Handle, &screen[0])
+
+	for i, info := range screen {
 		infomations[i].Id = int(info.id)
 		infomations[i].Width = int(info.width)
 		infomations[i].Height = int(info.height)
@@ -61,11 +60,14 @@ func ScreenInfomations(screenCapture *ScreenCapture) []ScreenInfo {
 	return infomations
 }
 
-func CreateScreenImage(screenCapture *ScreenCapture) {
+func CreateScreenImage(screenCapture *ScreenCapture, screenId uint8) {
+	C.create_screen_image(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage)
 }
 
-func DestroyScreenImage() {
+func DestroyScreenImage(screenCapture *ScreenCapture) {
+	C.destroy_screen_image(&screenCapture.ScreenImage)
 }
 
-func Capture() {
+func Capture(screenCapture *ScreenCapture, screenId int32) {
+	C.capture(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage)
 }

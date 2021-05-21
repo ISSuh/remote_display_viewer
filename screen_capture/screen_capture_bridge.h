@@ -18,7 +18,7 @@ typedef struct {
   int height;
   int x;
   int y;
-} ScreenInfo;
+} Screen;
 
 typedef struct {
   unsigned char* buffer;
@@ -31,7 +31,7 @@ void* create_rdv_hadle();
 void destroy_rdv_hadle(void* handle);
 
 int screen_count(void* handle);
-void screen_infomations(void* handle, ScreenInfo* remote_screen);
+void screen_infomations(void* handle, Screen* remote_screen);
 
 void create_screen_image(void* handle, int screen_id, ScreenImage* image);
 void destroy_screen_image(ScreenImage* image);
