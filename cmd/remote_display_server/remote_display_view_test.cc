@@ -5,8 +5,7 @@
  */
 
 #include <iostream>
-
-#include "screen_capture_bridge.h"
+#include "../../screen_capture/screen_capture_bridge.h"
 
 int main(int argc, char *argv[]) {
   std::cout << "Remote Display View\n";
@@ -14,7 +13,7 @@ int main(int argc, char *argv[]) {
   void* rdv_handle = create_rdv_hadle();
   int count = screen_count(rdv_handle);
 
-  RemoteScreen* remote_screens = new RemoteScreen[count];
+  ScreenInfo* remote_screens = new ScreenInfo[count];
   screen_infomations(rdv_handle, remote_screens);
 
   for (int i = 0 ; i < count ; ++i) {
@@ -25,10 +24,10 @@ int main(int argc, char *argv[]) {
               << remote_screens[i].y << "\n";
   }
 
-  RemoteScreenImage image;
-  create_screen_image(rdv_handle, 1, &image);
+  ScreenImage image;
+  create_screen_image(rdv_handle, 0, &image);
 
-  capture(rdv_handle, &image);
+  capture(rdv_handle, 0, &image);
   std::cout << std::endl << image.buffer << std::endl;
 
   delete remote_screens;

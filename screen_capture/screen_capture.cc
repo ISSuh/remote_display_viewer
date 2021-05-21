@@ -5,128 +5,118 @@
  */
 
 #include "screen_capture.h"
-#include <X11/Xutil.h>
-#include <sys/shm.h>
-#include <cmath>
-#include <thread>
+
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
+
 #include <algorithm>
 
 namespace rdv {
 
-ScreemImage::ScreemImage() : ximage_(nullptr), rect_(Rect()) {
-  shm_info_.shmaddr = nullptr;
+Screens::Screens() : screen_handle_(nullptr) {
+  if (!gtk_init_check(nullptr, nullptr)) {
+    gtk_init(nullptr, nullptr);
+  }
+
+  screen_handle_ = gdk_screen_get_default();
 }
 
-ScreemImage::~ScreemImage() {
-  ximage_ = nullptr;
-  shm_info_.shmaddr = nullptr;
+Screens::~Screens() {
+  screen_handle_ = nullptr;
 }
 
-bool ScreemImage::CreateImage(DisplayHandle* display_hanle, Rect rect) {
-  if (rect.IsEmpty()) {
-    return false;
+void* Screens::GetRootWindowHandle() {
+  if (!screen_handle_) {
+    return nullptr;
   }
 
-  rect_ = rect;
-  if (!CreateShm()) {
-    return false;
-  }
-
-  auto* display = display_hanle->get();
-  ximage_ =
-      XShmCreateImage(display, XDefaultVisual(display, XDefaultScreen(display)),
-                      DefaultDepth(display, XDefaultScreen(display)), ZPixmap,
-                      0, &shm_info_, 0, 0);
-
-  if (!ximage_) {
-    DestroyImage(display_hanle);
-    return false;
-  }
-
-  ximage_->data = shm_info_.shmaddr;
-  ximage_->width = rect_.width();
-  ximage_->height = rect_.height();
-
-  XShmAttach(display, &shm_info_);
-  XSync(display, false);
-
-  return true;
+  GdkScreen* screen = static_cast<GdkScreen*>(screen_handle_);
+  return gdk_screen_get_root_window(screen);
 }
 
-void ScreemImage::DestroyImage(DisplayHandle* display_hanle) {
-  if (ximage_) {
-    XShmDetach(display_hanle->get(), &shm_info_);
-    XDestroyImage(ximage_);
+uint8_t Screens::NumberOfScreen() {
+  if (!screen_handle_) {
+    return 0;
   }
 
-  if (shm_info_.shmaddr) {
-    shmdt(shm_info_.shmaddr);
+  GdkScreen* screen = static_cast<GdkScreen*>(screen_handle_);
+  return gdk_screen_get_n_monitors(screen);
+}
+
+Rect Screens::ScreenRect(uint8_t screen_id) {
+  if (screen_id >= NumberOfScreen()) {
+    return Rect();
   }
+
+  GdkScreen* screen = static_cast<GdkScreen*>(screen_handle_);
+  GdkRectangle gdk_rect;
+
+  gdk_screen_get_monitor_geometry(screen, screen_id, &gdk_rect);
+  return Rect(gdk_rect.width, gdk_rect.height, gdk_rect.x, gdk_rect.y);
 }
 
 ScreenCapture::ScreenCapture() {}
 
-ScreenCapture::~ScreenCapture() {
-  image_.DestroyImage(display_.GetDisplayHandle());
+ScreenCapture::~ScreenCapture() {}
+
+void ScreenCapture::Capture(uint8_t screen_id, uint8_t* image) {
+  GdkWindow* root = static_cast<GdkWindow*>(screens_.GetRootWindowHandle());
+  Rect screen_rect = ScreenRect(screen_id);
+
+  GdkPixbuf* screenshot =
+      gdk_pixbuf_get_from_window(root, screen_rect.x(), screen_rect.y(),
+                                 screen_rect.width(), screen_rect.height());
+
+  // DrawMousePonter(screen_rect, screenshot);
+
+  const uint8_t* screenshot_buf = gdk_pixbuf_read_pixels(screenshot);
+  int32_t buf_size = gdk_pixbuf_get_byte_length(screenshot);
+  std::copy(screenshot_buf, screenshot_buf + buf_size, image);
 }
 
-bool ScreemImage::CreateShm() {
-  shm_info_.readOnly = false;
-  shm_info_.shmid = shmget(IPC_PRIVATE, GetImageBufferSize(),
-                           IPC_CREAT | 0600);
-  if (shm_info_.shmid == -1) {
-    return false;
-  }
+// void ScreenCapture::DrawMousePonter(const Rect& screen_rect, void* screenshot) {
+//   GdkPixbuf* screen_image = static_cast<GdkPixbuf*>(screenshot);
+//   GdkScreen* screen = static_cast<GdkScreen*>(screens_.handle());
+//   GdkDisplay* display = gdk_screen_get_display(screen);
 
-  shm_info_.shmaddr = reinterpret_cast<char*>(shmat(shm_info_.shmid, 0, 0));
-  if (shm_info_.shmaddr == reinterpret_cast<char*>(-1)) {
-    return false;
-  }
+//   g_autoptr(GdkCursor) cursor =
+//       gdk_cursor_new_for_display(display, GDK_LEFT_PTR);
+//   g_autoptr(GdkPixbuf) cursor_pixbuf = gdk_cursor_get_image(cursor);
 
-  shmctl(shm_info_.shmid, IPC_RMID, 0);
-  return true;
-}
+//   if (cursor_pixbuf != nullptr) {
+//     GdkSeat* seat = gdk_display_get_default_seat(screen);
+//     GdkDevice* device = gdk_seat_get_pointer(seat);
+//     Rect cursor_rect;
+//     gint cx, cy, xhot, yhot;
 
+//     gdk_window_get_device_position(root, device, &cx, &cy, nullptr);
 
-ScreenInfo ScreenCapture::GetScreenInfomationes(int32_t screen_id) {
-  auto screen_map = display_.GetScreenMap();
-  if (screen_map.find(screen_id) == screen_map.end()) {
-    return ScreenInfo();
-  }
-  return screen_map[screen_id];
-}
+//     sscanf(gdk_pixbuf_get_option(cursor_pixbuf, "x_hot"), "%d", &xhot);
+//     sscanf(gdk_pixbuf_get_option(cursor_pixbuf, "y_hot"), "%d", &yhot);
 
-bool ScreenCapture::SetScreen(int32_t screen_id) {
-  auto screen_map = display_.GetScreenMap();
-  if (screen_map.find(screen_id) == screen_map.end()) {
-    return false;
-  }
+//     GdkRectangle gdk_screen_rect;
+//     gdk_screen_rect.x = screen_rect.x();
+//     gdk_screen_rect.y = screen_rect.y();
+//     gdk_screen_rect.width = screen_rect.width();
+//     gdk_screen_rect.height = screen_rect.height();
 
-  auto& screen_info = screen_map[screen_id];
+//     GdkRectangle gdk_cursor_rect;
+//     gdk_cursor_rect.x = cx + screen_rect.x();
+//     gdk_cursor_rect.y = cy + screen_rect.y();
+//     gdk_cursor_rect.width = gdk_pixbuf_get_width(cursor_pixbuf);
+//     gdk_cursor_rect.height = gdk_pixbuf_get_height(cursor_pixbuf);
 
-  if (image_.GetXImage()) {
-    image_.DestroyImage(screen_info.GetDisplayHanel());
-  }
+//     if (gdk_rectangle_intersect(&gdk_screen_rect, &gdk_cursor_rect,
+//                                 &gdk_cursor_rect)) {
+//       gint cursor_x = cx - xhot;
+//       gint cursor_y = cy - yhot;
 
-  image_.CreateImage(screen_info.GetDisplayHanel(), screen_info.GetRect());
-
-  return true;
-}
-
-void ScreenCapture::Capture(char* image_data) {
-  if (!image_data) {
-    return;
-  }
-
-  auto* display = display_.GetDisplayHandle()->get();
-  auto* image = image_.GetXImage();
-  Rect rect = image_.GetRect();
-  int32_t len = image_.GetImageBufferSize();
-
-  XShmGetImage(display, XDefaultRootWindow(display), image, rect.x(), rect.y(),
-               AllPlanes);
-
-  std::copy(image->data, image->data + len, image_data);
-}
+//       gdk_pixbuf_composite(cursor_pixbuf, screen_image, cursor_x, cursor_y,
+//                            gdk_cursor_rect.width, gdk_cursor_rect.height,
+//                            cursor_x, cursor_y, 1.0, 1.0, GDK_INTERP_BILINEAR,
+//                            255);
+//     }
+//   }
+// }
 
 }  // namespace rdv

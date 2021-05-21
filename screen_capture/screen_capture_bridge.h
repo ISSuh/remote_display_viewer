@@ -21,12 +21,11 @@ typedef struct {
 } ScreenInfo;
 
 typedef struct {
-  char* buffer;
+  unsigned char* buffer;
   int width;
   int height;
   int plane;
 } ScreenImage;
-
 
 void* create_rdv_hadle();
 void destroy_rdv_hadle(void* handle);
@@ -37,7 +36,7 @@ void screen_infomations(void* handle, ScreenInfo* remote_screen);
 void create_screen_image(void* handle, int screen_id, ScreenImage* image);
 void destroy_screen_image(ScreenImage* image);
 
-void capture(void* handle, ScreenImage* image);
+void capture(void* handle, int screen_id, ScreenImage* image);
 
 #ifdef __cplusplus
 }  // extern "C"

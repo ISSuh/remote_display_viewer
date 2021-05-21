@@ -24,8 +24,7 @@ int screen_count(void* handle) {
   }
 
   rdv::ScreenCapture* screen_capture = static_cast<rdv::ScreenCapture*>(handle);
-  rdv::X11Display::ScreenMap screen_map = screen_capture->GetScreenMap();
-  return screen_map.size();
+  return screen_capture->NumberOfScreen();
 }
 
 void screen_infomations(void* handle, ScreenInfo* remote_screen) {
@@ -34,19 +33,16 @@ void screen_infomations(void* handle, ScreenInfo* remote_screen) {
   }
 
   rdv::ScreenCapture* screen_capture = static_cast<rdv::ScreenCapture*>(handle);
-  rdv::X11Display::ScreenMap screen_map = screen_capture->GetScreenMap();
 
-  int index = 0;
-  for (const auto& screen : screen_map) {
-    rdv::ScreenInfo info = screen.second;
+  uint8_t screen_count = screen_capture->NumberOfScreen();
+  for (uint8_t i = 0 ; i < screen_count ; ++i) {
+    rdv::Rect rect = screen_capture->ScreenRect(i);
 
-    remote_screen[index].id = screen.first;
-    remote_screen[index].width = info.GetRect().width();
-    remote_screen[index].height = info.GetRect().height();
-    remote_screen[index].x = info.GetRect().x();
-    remote_screen[index].y = info.GetRect().y();
-
-    ++index;
+    remote_screen[i].id = i;
+    remote_screen[i].width = rect.width();
+    remote_screen[i].height = rect.height();
+    remote_screen[i].x = rect.x();
+    remote_screen[i].y = rect.y();
   }
 }
 
@@ -57,13 +53,12 @@ void create_screen_image(void* handle, int screen_id, ScreenImage* image) {
   }
 
   rdv::ScreenCapture* screen_capture = static_cast<rdv::ScreenCapture*>(handle);
-  screen_capture->SetScreen(screen_id);
+  rdv::Rect rect = screen_capture->ScreenRect(screen_id);
 
-  const rdv::ScreemImage* screen_image = screen_capture->GetScreemImage();
-  image->width = screen_image->GetRect().width();
-  image->height = screen_image->GetRect().height();
-  image->plane = screen_image->GetImagePlane();
-  image->buffer = new char[screen_image->GetImageBufferSize()];
+  image->width = rect.width();
+  image->height = rect.height();
+  image->plane = rdv::ScreenCapture::IMAGE_PLANE;
+  image->buffer = new uint8_t[image->width * image->height * image->plane];
 }
 
 void destroy_screen_image(ScreenImage* image) {
@@ -73,11 +68,11 @@ void destroy_screen_image(ScreenImage* image) {
   delete image->buffer;
 }
 
-void capture(void* handle, ScreenImage* image) {
+void capture(void* handle, int screen_id, ScreenImage* image) {
   if (!handle || !image) {
     return;
   }
 
   rdv::ScreenCapture* screen_capture = static_cast<rdv::ScreenCapture*>(handle);
-  screen_capture->Capture(image->buffer);
+  screen_capture->Capture(screen_id, image->buffer);
 }

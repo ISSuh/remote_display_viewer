@@ -7,42 +7,26 @@
 #ifndef SRC_SCREEN_CAPTURE_SCREEN_CAPTURE_H_
 #define SRC_SCREEN_CAPTURE_SCREEN_CAPTURE_H_
 
-#include <X11/Xlib.h>
-#include <X11/extensions/XShm.h>
 
-#include <atomic>
-#include <chrono>
+#include <vector>
 
 #include "geometry.h"
-#include "display.h"
 
 namespace rdv {
 
-class ScreemImage {
+class Screens {
  public:
-  ScreemImage();
-  ~ScreemImage();
+  Screens();
+  ~Screens();
 
-  bool CreateImage(DisplayHandle* display_hanle, Rect rect);
-  void DestroyImage(DisplayHandle* display_hanle);
+  void* handle() { return screen_handle_; }
+  void* GetRootWindowHandle();
 
-  XImage* GetXImage() { return ximage_; }
-
-  char* GetImageBuffer() { return ximage_->data; }
-  int32_t GetImageBufferSize() const {
-    return rect_.width() * rect_.height() * image_plane;
-  }
-
-  const Rect& GetRect() const { return rect_; }
-  int32_t GetImagePlane() const { return image_plane; }
+  uint8_t NumberOfScreen();
+  Rect ScreenRect(uint8_t screen_id);
 
  private:
-  bool CreateShm();
-
-  XImage* ximage_;
-  XShmSegmentInfo shm_info_;
-  Rect rect_;
-  const uint8_t image_plane = 4;
+  void* screen_handle_;
 };
 
 class ScreenCapture {
@@ -50,17 +34,17 @@ class ScreenCapture {
   ScreenCapture();
   ~ScreenCapture();
 
-  X11Display::ScreenMap GetScreenMap() { return display_.GetScreenMap(); }
-  ScreenInfo GetScreenInfomationes(int32_t screen_id);
+  static const int IMAGE_PLANE = 3;
 
-  const ScreemImage* GetScreemImage() const { return &image_; }
+  uint8_t NumberOfScreen() { return screens_.NumberOfScreen(); }
+  Rect ScreenRect(uint8_t screen_id) { return screens_.ScreenRect(screen_id); }
 
-  bool SetScreen(int32_t screen_id);
-  void Capture(char* image_data);
+  void Capture(uint8_t screen_id, uint8_t* image);
 
  private:
-  ScreemImage image_;
-  X11Display display_;
+  // void DrawMousePonter(const Rect& screen_rect, void* screenshot);
+
+  Screens screens_;
 };
 
 }  // namespace rdv

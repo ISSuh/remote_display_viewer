@@ -1,8 +1,7 @@
 package screencapture
 
-// #cgo LDFLAGS:
 // #cgo CXXFLAGS: -I. -g -O3 -Wall -Wextra -fPIC -std=c++11
-// #cgo pkg-config: x11 xext xinerama gtk+-2.0
+// #cgo pkg-config: gtk+-3.0
 // #include <screen_capture_bridge.h>
 import "C"
 import (
