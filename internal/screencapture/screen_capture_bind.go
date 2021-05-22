@@ -24,7 +24,7 @@ type ScreenImage struct {
 type ScreenCapture struct {
 	Handle      unsafe.Pointer
 	Screen      C.Screen
-	ScreenImage C.ScreenImage
+	ScreenImage []C.ScreenImage
 }
 
 func CreateScreenCaptureHandle() ScreenCapture {
@@ -61,13 +61,18 @@ func ScreenInfomations(screenCapture *ScreenCapture) []Screen {
 }
 
 func CreateScreenImage(screenCapture *ScreenCapture, screenId uint8) {
-	C.create_screen_image(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage)
+	if len(screenCapture.ScreenImage) <= int(screenId+1) {
+		var image C.ScreenImage
+		screenCapture.ScreenImage = append(screenCapture.ScreenImage, image)
+	}
+
+	C.create_screen_image(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage[screenId])
 }
 
-func DestroyScreenImage(screenCapture *ScreenCapture) {
-	C.destroy_screen_image(&screenCapture.ScreenImage)
+func DestroyScreenImage(screenCapture *ScreenCapture, screenId uint8) {
+	C.destroy_screen_image(&screenCapture.ScreenImage[screenId])
 }
 
-func Capture(screenCapture *ScreenCapture, screenId int32) {
-	C.capture(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage)
+func Capture(screenCapture *ScreenCapture, screenId uint8) {
+	C.capture(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage[screenId])
 }

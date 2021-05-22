@@ -10,8 +10,8 @@
       }
 
       async function updateScreenList() {
-        var address = document.getElementById("serverAddress").value;
-        var url = address + "/api/screens";
+        var stream_url = "/stream"
+        var url = "/api/screens";
           
         const screen_lists_json = await getScreenLists(url);
 
@@ -30,19 +30,19 @@
           li.appendChild(textNode);
           
           a.appendChild(li);
-          a.href = url + "/" + screen_lists_json[i].Id;
+          a.href = stream_url + "/" + screen_lists_json[i].Id;
 
           document.getElementById('screen-list').appendChild(a);
         }
+      }
+
+      window.onload = function(){
+        updateScreenList();
       }
     </script>
   </head>
   <body>
     <h2>Display List</h2>
-    <div>
-      <input type='text' id='serverAddress' />
-      <input type='button' value='set' onclick='updateScreenList()' />
-    </div>
     <div>
       <ul id="screen-list">
       </ul>
