@@ -46,33 +46,11 @@ void screen_infomations(void* handle, Screen* remote_screen) {
   }
 }
 
-
-void create_screen_image(void* handle, int screen_id, ScreenImage* image) {
+void capture(void* handle, int screen_id, void* image) {
   if (!handle || !image) {
     return;
   }
 
   rdv::ScreenCapture* screen_capture = static_cast<rdv::ScreenCapture*>(handle);
-  rdv::Rect rect = screen_capture->ScreenRect(screen_id);
-
-  image->width = rect.width();
-  image->height = rect.height();
-  image->plane = rdv::ScreenCapture::IMAGE_PLANE;
-  image->buffer = new uint8_t[image->width * image->height * image->plane];
-}
-
-void destroy_screen_image(ScreenImage* image) {
-  if (!image) {
-    return;
-  }
-  delete image->buffer;
-}
-
-void capture(void* handle, int screen_id, ScreenImage* image) {
-  if (!handle || !image) {
-    return;
-  }
-
-  rdv::ScreenCapture* screen_capture = static_cast<rdv::ScreenCapture*>(handle);
-  screen_capture->Capture(screen_id, image->buffer);
+  screen_capture->Capture(screen_id, static_cast<uint8_t*>(image));
 }

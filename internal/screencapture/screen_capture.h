@@ -34,7 +34,7 @@ class ScreenCapture {
   ScreenCapture();
   ~ScreenCapture();
 
-  static const int IMAGE_PLANE = 3;
+  static const int IMAGE_PLANE = 4;
 
   uint8_t NumberOfScreen() { return screens_.NumberOfScreen(); }
   Rect ScreenRect(uint8_t screen_id) { return screens_.ScreenRect(screen_id); }

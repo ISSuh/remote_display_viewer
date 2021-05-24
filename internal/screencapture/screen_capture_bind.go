@@ -14,17 +14,9 @@ type Screen struct {
 	Y      int
 }
 
-type ScreenImage struct {
-	Buffer []byte
-	Width  int
-	Height int
-	Plane  int
-}
-
 type ScreenCapture struct {
-	Handle      unsafe.Pointer
-	Screen      C.Screen
-	ScreenImage []C.ScreenImage
+	Handle unsafe.Pointer
+	Screen C.Screen
 }
 
 func CreateScreenCaptureHandle() ScreenCapture {
@@ -60,19 +52,6 @@ func ScreenInfomations(screenCapture *ScreenCapture) []Screen {
 	return infomations
 }
 
-func CreateScreenImage(screenCapture *ScreenCapture, screenId uint8) {
-	if len(screenCapture.ScreenImage) <= int(screenId+1) {
-		var image C.ScreenImage
-		screenCapture.ScreenImage = append(screenCapture.ScreenImage, image)
-	}
-
-	C.create_screen_image(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage[screenId])
-}
-
-func DestroyScreenImage(screenCapture *ScreenCapture, screenId uint8) {
-	C.destroy_screen_image(&screenCapture.ScreenImage[screenId])
-}
-
-func Capture(screenCapture *ScreenCapture, screenId uint8) {
-	C.capture(screenCapture.Handle, C.int(screenId), &screenCapture.ScreenImage[screenId])
+func Capture(screenCapture *ScreenCapture, screenId uint8, image *Image) {
+	C.capture(screenCapture.Handle, C.int(screenId), unsafe.Pointer(&image.Pix[0]))
 }
