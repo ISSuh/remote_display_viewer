@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"remote_display_viewer/internal/screencapture"
 	"remote_display_viewer/internal/server"
@@ -13,6 +14,7 @@ import (
 func main() {
 	var remoteDisplay server.RemoteDisplay
 	remoteDisplay.ScreenCapture = screencapture.CreateScreenCaptureHandle()
+	remoteDisplay.Interval = 50 * time.Millisecond
 
 	router := mux.NewRouter()
 	router.HandleFunc("/api/screens", remoteDisplay.ScreensList)

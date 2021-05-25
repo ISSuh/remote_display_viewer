@@ -3,12 +3,12 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"log"
 	"net/http"
 	"strconv"
-	"sync"
 	"time"
 
 	"remote_display_viewer/internal/screencapture"
@@ -16,44 +16,37 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Position struct {
-	Width  int
-	Height int
-	X      int
-	Y      int
-}
-
 type ScreenInfoJson struct {
 	Id  int
-	Pos Position
-}
-
-type RemoteScreen struct {
-	Id            int
-	FrameChannels map[chan bytes.Buffer]bool
-	Pos           Position
-	Lock          sync.Mutex
-	Interval      time.Duration
-	Fps           uint8
+	Pos screencapture.Position
 }
 
 type RemoteDisplay struct {
 	ScreenCapture screencapture.ScreenCapture
-	RemoteScreen  []RemoteScreen
+	Screen        []screencapture.RemoteScreen
+	Interval      time.Duration
+	Fps           uint8
 }
 
-func (screen *RemoteDisplay) ScreensList(res http.ResponseWriter, req *http.Request) {
+const headerParts = "\r\n" +
+	"Content-Type: multipart/x-mixed-replace;boundary=MJPEGBOUNDARY\r\n" +
+	"Content-Type: image/jpeg\r\n" +
+	"Content-Length: %d\r\n" +
+	"X-Timestamp: 0.000000\r\n" +
+	"\r\n"
+
+func (display *RemoteDisplay) ScreensList(res http.ResponseWriter, req *http.Request) {
 	if req.Method == "GET" {
-		infomations := screencapture.ScreenInfomations(&screen.ScreenCapture)
+		display.Screen = screencapture.ScreenInfomations(&display.ScreenCapture)
 
-		var jsonData = make([]ScreenInfoJson, len(infomations))
+		var jsonData = make([]ScreenInfoJson, len(display.Screen))
 
-		for i, info := range infomations {
+		for i, info := range display.Screen {
 			jsonData[i].Id = info.Id
-			jsonData[i].Pos.Width = info.Width
-			jsonData[i].Pos.Height = info.Height
-			jsonData[i].Pos.X = info.X
-			jsonData[i].Pos.Y = info.Y
+			jsonData[i].Pos.Width = info.Pos.Width
+			jsonData[i].Pos.Height = info.Pos.Height
+			jsonData[i].Pos.X = info.Pos.X
+			jsonData[i].Pos.Y = info.Pos.Y
 		}
 
 		jsonBytes, err := json.Marshal(jsonData)
@@ -67,52 +60,72 @@ func (screen *RemoteDisplay) ScreensList(res http.ResponseWriter, req *http.Requ
 	}
 }
 
-func (screen *RemoteDisplay) ScreenStream(res http.ResponseWriter, req *http.Request) {
+func (display *RemoteDisplay) ScreenStream(res http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	id, _ := strconv.Atoi(vars["id"])
 
 	if req.Method == "GET" {
-		if len(screen.RemoteScreen) <= id {
-			screen.RemoteScreen = append(screen.RemoteScreen, screen.createScreen(id))
-
-			// go screen.worker()
+		if !display.Screen[id].Running {
+			go display.updateStream(id)
 		}
 
-		res.Header().Set("Cache-Control", "no-cache")
-		res.Header().Set("Connection", "keep-alive")
-		res.Header().Add("Content-Type", "multipart/x-mixed-replace;boundary=--MJPEGBOUNDARY")
-		res.Header().Add("Content-Type", "image/jpeg")
+		buffer := make(chan []byte)
+		display.Screen[id].Lock.Lock()
+		display.Screen[id].FrameChannels[buffer] = true
+		display.Screen[id].Lock.Unlock()
 
-		// res.Header().Add("Content-Length", strconv.Itoa(len(buf.Bytes())))
-		// res.Write(buf.Bytes())
+		res.Header().Add("Cache-Control", "no-store, no-cache, must-revalidate")
+		res.Header().Add("Pragma", "no-cache")
+		res.Header().Add("Content-Type", "multipart/x-mixed-replace;boundary=MJPEGBOUNDARY")
+
+		for {
+			time.Sleep(display.Interval)
+
+			imageBuffer := <-buffer
+			fmt.Println("Receive : ", len(imageBuffer))
+
+			if _, err := res.Write(imageBuffer); nil != err {
+				fmt.Println(err)
+				break
+			}
+		}
+
+		display.Screen[id].Lock.Lock()
+		delete(display.Screen[id].FrameChannels, buffer)
+		display.Screen[id].Lock.Unlock()
 	} else {
 		res.Write([]byte("Invalid Method"))
 	}
 }
 
-func (screen *RemoteDisplay) worker(id int) {
+func (display *RemoteDisplay) updateStream(id int) {
+	display.Screen[id].Running = true
+
 	image := screencapture.NewImage(image.Rect(
-		0, 0, screen.RemoteScreen[id].Pos.Width, screen.RemoteScreen[id].Pos.Height))
+		0, 0, display.Screen[id].Pos.Width, display.Screen[id].Pos.Height))
 
-	buf := make(chan bytes.Buffer)
-	screen.RemoteScreen[id].Lock.Lock()
-	screen.RemoteScreen[id].FrameChannels[buf] = true
-	screen.RemoteScreen[id].Lock.Unlock()
+	for {
+		var buffer bytes.Buffer
 
-	screencapture.Capture(&screen.ScreenCapture, uint8(id), image)
+		screencapture.Capture(&display.ScreenCapture, uint8(id), image)
+		jpeg.Encode(&buffer, image, &jpeg.Options{Quality: 50})
 
-	jpeg.Encode(buf, image, &jpeg.Options{Quality: 50})
-}
+		bufferSize := len(buffer.Bytes())
 
-func (screen *RemoteDisplay) createScreen(id int) RemoteScreen {
-	var remoteScreen RemoteScreen
-	infomations := screencapture.ScreenInfomations(&screen.ScreenCapture)
+		header := fmt.Sprintf(headerParts, bufferSize)
+		headerSize := len(header)
 
-	remoteScreen.Id = id
-	remoteScreen.Pos.Width = infomations[id].Width
-	remoteScreen.Pos.Height = infomations[id].Height
-	remoteScreen.Pos.X = infomations[id].X
-	remoteScreen.Pos.Y = infomations[id].Y
+		frame := make([]byte, (bufferSize + headerSize))
+		copy(frame, header)
+		copy(frame[bufferSize:], buffer.Bytes())
 
-	return remoteScreen
+		display.Screen[id].Lock.Lock()
+		for c := range display.Screen[id].FrameChannels {
+			select {
+			case c <- frame:
+			default:
+			}
+		}
+		display.Screen[id].Lock.Unlock()
+	}
 }
