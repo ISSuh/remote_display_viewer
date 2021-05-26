@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -12,9 +11,13 @@ import (
 )
 
 func main() {
+	server.LoggerInitialize()
+
 	var remoteDisplay server.RemoteDisplay
 	remoteDisplay.ScreenCapture = screencapture.CreateScreenCaptureHandle()
-	remoteDisplay.Interval = 50 * time.Millisecond
+
+	remoteDisplay.Config.JpegQuality = 70
+	remoteDisplay.Config.Interval = 16 * time.Millisecond
 
 	router := mux.NewRouter()
 	router.HandleFunc("/api/screens", remoteDisplay.ScreensList)
@@ -22,7 +25,7 @@ func main() {
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 
 	if err := http.ListenAndServe(":5000", router); err != nil {
-		log.Fatal(err)
+		server.Log.Error.Println(err)
 	}
 
 	screencapture.DestroyScreenCaptureHandle(&remoteDisplay.ScreenCapture)

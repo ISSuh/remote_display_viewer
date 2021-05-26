@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"log"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"time"
+
+	"mime/multipart"
+	"net/textproto"
 
 	"remote_display_viewer/internal/screencapture"
 
@@ -21,23 +24,21 @@ type ScreenInfoJson struct {
 	Pos screencapture.Position
 }
 
+type Configure struct {
+	Interval    time.Duration
+	Fps         uint8
+	JpegQuality int
+}
+
 type RemoteDisplay struct {
 	ScreenCapture screencapture.ScreenCapture
 	Screen        []screencapture.RemoteScreen
-	Interval      time.Duration
-	Fps           uint8
+	Config        Configure
 }
-
-const headerParts = "\r\n" +
-	"Content-Type: multipart/x-mixed-replace;boundary=MJPEGBOUNDARY\r\n" +
-	"Content-Type: image/jpeg\r\n" +
-	"Content-Length: %d\r\n" +
-	"X-Timestamp: 0.000000\r\n" +
-	"\r\n"
 
 func (display *RemoteDisplay) ScreensList(res http.ResponseWriter, req *http.Request) {
 	if req.Method == "GET" {
-		display.Screen = screencapture.ScreenInfomations(&display.ScreenCapture)
+		display.Screen = display.ScreenCapture.ScreenListUpdate()
 
 		var jsonData = make([]ScreenInfoJson, len(display.Screen))
 
@@ -51,7 +52,7 @@ func (display *RemoteDisplay) ScreensList(res http.ResponseWriter, req *http.Req
 
 		jsonBytes, err := json.Marshal(jsonData)
 		if err != nil {
-			log.Fatal(err)
+			Log.Error.Println(err.Error())
 		}
 
 		res.Write(jsonBytes)
@@ -61,71 +62,84 @@ func (display *RemoteDisplay) ScreensList(res http.ResponseWriter, req *http.Req
 }
 
 func (display *RemoteDisplay) ScreenStream(res http.ResponseWriter, req *http.Request) {
+	Log.Info.Println("Connect : ", req.RemoteAddr)
+
 	vars := mux.Vars(req)
 	id, _ := strconv.Atoi(vars["id"])
 
 	if req.Method == "GET" {
-		if !display.Screen[id].Running {
+		screen := &display.Screen[id]
+
+		atomic.AddInt32(&screen.Running, 1)
+
+		if atomic.LoadInt32(&screen.Running) <= 1 {
 			go display.updateStream(id)
 		}
 
 		buffer := make(chan []byte)
-		display.Screen[id].Lock.Lock()
-		display.Screen[id].FrameChannels[buffer] = true
-		display.Screen[id].Lock.Unlock()
+		screen.Lock.Lock()
+		screen.FrameChannels[buffer] = true
+		screen.Lock.Unlock()
+
+		mimeWriter := multipart.NewWriter(res)
+		contentType := fmt.Sprintf("multipart/x-mixed-replace;boundary=%s", mimeWriter.Boundary())
 
 		res.Header().Add("Cache-Control", "no-store, no-cache, must-revalidate")
 		res.Header().Add("Pragma", "no-cache")
-		res.Header().Add("Content-Type", "multipart/x-mixed-replace;boundary=MJPEGBOUNDARY")
+		res.Header().Add("Content-Type", contentType)
 
 		for {
-			time.Sleep(display.Interval)
+			time.Sleep(display.Config.Interval)
+
+			partHeader := make(textproto.MIMEHeader)
+			partHeader.Add("Content-Type", "image/jpeg")
+
+			partWriter, err := mimeWriter.CreatePart(partHeader)
+			if err != nil {
+				Log.Error.Println(err.Error())
+				break
+			}
 
 			imageBuffer := <-buffer
-			fmt.Println("Receive : ", len(imageBuffer))
-
-			if _, err := res.Write(imageBuffer); nil != err {
-				fmt.Println(err)
+			if _, err := partWriter.Write(imageBuffer); err != nil {
+				Log.Error.Println(err.Error())
 				break
 			}
 		}
 
-		display.Screen[id].Lock.Lock()
-		delete(display.Screen[id].FrameChannels, buffer)
-		display.Screen[id].Lock.Unlock()
+		screen.Lock.Lock()
+		delete(screen.FrameChannels, buffer)
+		screen.Lock.Unlock()
+
+		atomic.AddInt32(&screen.Running, -1)
 	} else {
 		res.Write([]byte("Invalid Method"))
 	}
+
+	Log.Info.Println("Disconnect : ", req.RemoteAddr)
 }
 
 func (display *RemoteDisplay) updateStream(id int) {
-	display.Screen[id].Running = true
+	screen := &display.Screen[id]
+	image := screencapture.NewImage(image.Rect(0, 0, screen.Pos.Width, screen.Pos.Height))
 
-	image := screencapture.NewImage(image.Rect(
-		0, 0, display.Screen[id].Pos.Width, display.Screen[id].Pos.Height))
-
-	for {
+	for atomic.LoadInt32(&screen.Running) > 0 {
 		var buffer bytes.Buffer
 
-		screencapture.Capture(&display.ScreenCapture, uint8(id), image)
-		jpeg.Encode(&buffer, image, &jpeg.Options{Quality: 50})
+		if err := display.ScreenCapture.Capture(&display.ScreenCapture, uint8(id), image); err != nil {
+			Log.Error.Println(err.Error())
+			break
+		}
 
-		bufferSize := len(buffer.Bytes())
+		jpeg.Encode(&buffer, image, &jpeg.Options{Quality: display.Config.JpegQuality})
 
-		header := fmt.Sprintf(headerParts, bufferSize)
-		headerSize := len(header)
-
-		frame := make([]byte, (bufferSize + headerSize))
-		copy(frame, header)
-		copy(frame[bufferSize:], buffer.Bytes())
-
-		display.Screen[id].Lock.Lock()
-		for c := range display.Screen[id].FrameChannels {
+		screen.Lock.Lock()
+		for c := range screen.FrameChannels {
 			select {
-			case c <- frame:
+			case c <- buffer.Bytes():
 			default:
 			}
 		}
-		display.Screen[id].Lock.Unlock()
+		screen.Lock.Unlock()
 	}
 }

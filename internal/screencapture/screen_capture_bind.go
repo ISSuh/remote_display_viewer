@@ -5,7 +5,9 @@ package screencapture
 // #include <screen_capture_bridge.h>
 import "C"
 import (
+	"errors"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -21,11 +23,45 @@ type RemoteScreen struct {
 	FrameChannels map[chan []byte]bool
 	Pos           Position
 	Lock          sync.Mutex
-	Running       bool
+	Running       int32
 }
 
 type ScreenCapture struct {
 	Handle unsafe.Pointer
+}
+
+func (capture *ScreenCapture) ScreenCount() int {
+	return int(C.screen_count(capture.Handle))
+}
+
+func (capture *ScreenCapture) ScreenListUpdate() []RemoteScreen {
+	count := capture.ScreenCount()
+
+	infomations := make([]RemoteScreen, count, count)
+	screen := make([]C.Screen, count, count)
+
+	C.screen_infomations(capture.Handle, &screen[0])
+
+	for i, info := range screen {
+		infomations[i].Id = int(info.id)
+		infomations[i].Pos.Width = int(info.width)
+		infomations[i].Pos.Height = int(info.height)
+		infomations[i].Pos.X = int(info.x)
+		infomations[i].Pos.Y = int(info.y)
+
+		atomic.StoreInt32(&infomations[i].Running, 0)
+		infomations[i].FrameChannels = make(map[chan []byte]bool)
+	}
+
+	return infomations
+}
+
+func (capture *ScreenCapture) Capture(screenCapture *ScreenCapture, screenId uint8, image *Image) error {
+	C.capture(capture.Handle, C.int(screenId), unsafe.Pointer(&image.Pix[0]))
+	if image.Pix == nil {
+		return errors.New("Invalid pixel memory")
+	}
+	return nil
 }
 
 func CreateScreenCaptureHandle() ScreenCapture {
@@ -36,34 +72,4 @@ func CreateScreenCaptureHandle() ScreenCapture {
 
 func DestroyScreenCaptureHandle(screenCapture *ScreenCapture) {
 	C.destroy_rdv_hadle(screenCapture.Handle)
-}
-
-func ScreenCount(screenCapture *ScreenCapture) int {
-	return int(C.screen_count(screenCapture.Handle))
-}
-
-func ScreenInfomations(screenCapture *ScreenCapture) []RemoteScreen {
-	count := ScreenCount(screenCapture)
-
-	infomations := make([]RemoteScreen, count, count)
-	screen := make([]C.Screen, count, count)
-
-	C.screen_infomations(screenCapture.Handle, &screen[0])
-
-	for i, info := range screen {
-		infomations[i].Id = int(info.id)
-		infomations[i].Pos.Width = int(info.width)
-		infomations[i].Pos.Height = int(info.height)
-		infomations[i].Pos.X = int(info.x)
-		infomations[i].Pos.Y = int(info.y)
-		infomations[i].Running = false
-
-		infomations[i].FrameChannels = make(map[chan []byte]bool)
-	}
-
-	return infomations
-}
-
-func Capture(screenCapture *ScreenCapture, screenId uint8, image *Image) {
-	C.capture(screenCapture.Handle, C.int(screenId), unsafe.Pointer(&image.Pix[0]))
 }

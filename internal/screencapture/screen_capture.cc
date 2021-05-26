@@ -66,57 +66,61 @@ void ScreenCapture::Capture(uint8_t screen_id, uint8_t* image) {
   GdkPixbuf* screenshot =
       gdk_pixbuf_get_from_window(root, screen_rect.x(), screen_rect.y(),
                                  screen_rect.width(), screen_rect.height());
+  if (!screenshot) {
+    image = nullptr;
+    return;
+  }
 
-  // DrawMousePonter(screen_rect, screenshot);
+  DrawMousePonter(screen_rect, screenshot);
 
   const uint8_t* screenshot_buf = gdk_pixbuf_read_pixels(screenshot);
   int32_t buf_size = gdk_pixbuf_get_byte_length(screenshot);
   std::copy(screenshot_buf, screenshot_buf + buf_size, image);
 }
 
-// void ScreenCapture::DrawMousePonter(const Rect& screen_rect, void* screenshot) {
-//   GdkPixbuf* screen_image = static_cast<GdkPixbuf*>(screenshot);
-//   GdkScreen* screen = static_cast<GdkScreen*>(screens_.handle());
-//   GdkDisplay* display = gdk_screen_get_display(screen);
+void ScreenCapture::DrawMousePonter(const Rect& screen_rect, void* screenshot) {
+  GdkPixbuf* screen_image = static_cast<GdkPixbuf*>(screenshot);
+  GdkScreen* screen = static_cast<GdkScreen*>(screens_.handle());
+  GdkDisplay* display = gdk_screen_get_display(screen);
 
-//   g_autoptr(GdkCursor) cursor =
-//       gdk_cursor_new_for_display(display, GDK_LEFT_PTR);
-//   g_autoptr(GdkPixbuf) cursor_pixbuf = gdk_cursor_get_image(cursor);
+  g_autoptr(GdkCursor) cursor =
+      gdk_cursor_new_for_display(display, GDK_LEFT_PTR);
+  g_autoptr(GdkPixbuf) cursor_pixbuf = gdk_cursor_get_image(cursor);
 
-//   if (cursor_pixbuf != nullptr) {
-//     GdkSeat* seat = gdk_display_get_default_seat(screen);
-//     GdkDevice* device = gdk_seat_get_pointer(seat);
-//     Rect cursor_rect;
-//     gint cx, cy, xhot, yhot;
+  if (cursor_pixbuf != nullptr) {
+    GdkDeviceManager* device_manager = gdk_display_get_device_manager(display);
+    GdkDevice* device = gdk_device_manager_get_client_pointer(device_manager);
+    Rect cursor_rect;
+    gint cx, cy, xhot, yhot;
 
-//     gdk_window_get_device_position(root, device, &cx, &cy, nullptr);
+    gdk_device_get_position(device, &screen, &cx, &cy);
 
-//     sscanf(gdk_pixbuf_get_option(cursor_pixbuf, "x_hot"), "%d", &xhot);
-//     sscanf(gdk_pixbuf_get_option(cursor_pixbuf, "y_hot"), "%d", &yhot);
+    sscanf(gdk_pixbuf_get_option(cursor_pixbuf, "x_hot"), "%d", &xhot);
+    sscanf(gdk_pixbuf_get_option(cursor_pixbuf, "y_hot"), "%d", &yhot);
 
-//     GdkRectangle gdk_screen_rect;
-//     gdk_screen_rect.x = screen_rect.x();
-//     gdk_screen_rect.y = screen_rect.y();
-//     gdk_screen_rect.width = screen_rect.width();
-//     gdk_screen_rect.height = screen_rect.height();
+    GdkRectangle gdk_screen_rect;
+    gdk_screen_rect.x = screen_rect.x();
+    gdk_screen_rect.y = screen_rect.y();
+    gdk_screen_rect.width = screen_rect.width();
+    gdk_screen_rect.height = screen_rect.height();
 
-//     GdkRectangle gdk_cursor_rect;
-//     gdk_cursor_rect.x = cx + screen_rect.x();
-//     gdk_cursor_rect.y = cy + screen_rect.y();
-//     gdk_cursor_rect.width = gdk_pixbuf_get_width(cursor_pixbuf);
-//     gdk_cursor_rect.height = gdk_pixbuf_get_height(cursor_pixbuf);
+    GdkRectangle gdk_cursor_rect;
+    gdk_cursor_rect.x = cx + screen_rect.x();
+    gdk_cursor_rect.y = cy + screen_rect.y();
+    gdk_cursor_rect.width = gdk_pixbuf_get_width(cursor_pixbuf);
+    gdk_cursor_rect.height = gdk_pixbuf_get_height(cursor_pixbuf);
 
-//     if (gdk_rectangle_intersect(&gdk_screen_rect, &gdk_cursor_rect,
-//                                 &gdk_cursor_rect)) {
-//       gint cursor_x = cx - xhot;
-//       gint cursor_y = cy - yhot;
+    if (gdk_rectangle_intersect(&gdk_screen_rect, &gdk_cursor_rect,
+                                &gdk_cursor_rect)) {
+      gint cursor_x = cx - xhot;
+      gint cursor_y = cy - yhot;
 
-//       gdk_pixbuf_composite(cursor_pixbuf, screen_image, cursor_x, cursor_y,
-//                            gdk_cursor_rect.width, gdk_cursor_rect.height,
-//                            cursor_x, cursor_y, 1.0, 1.0, GDK_INTERP_BILINEAR,
-//                            255);
-//     }
-//   }
-// }
+      gdk_pixbuf_composite(cursor_pixbuf, screen_image, cursor_x, cursor_y,
+                           gdk_cursor_rect.width, gdk_cursor_rect.height,
+                           cursor_x, cursor_y, 1.0, 1.0, GDK_INTERP_BILINEAR,
+                           255);
+    }
+  }
+}
 
 }  // namespace rdv

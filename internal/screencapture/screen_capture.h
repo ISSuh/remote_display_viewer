@@ -42,7 +42,7 @@ class ScreenCapture {
   void Capture(uint8_t screen_id, uint8_t* image);
 
  private:
-  // void DrawMousePonter(const Rect& screen_rect, void* screenshot);
+  void DrawMousePonter(const Rect& screen_rect, void* screenshot);
 
   Screens screens_;
 };
